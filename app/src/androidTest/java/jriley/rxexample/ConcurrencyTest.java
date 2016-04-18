@@ -50,8 +50,8 @@ public class ConcurrencyTest {
 
         initServiceWaitTimes();
 
-        final SlowServiceTestingModule slowServiceTestingModule =  new SlowServiceTestingModule(mockWebServer.getUrl(""));
-        final Instrumentation instrumentation =  InstrumentationRegistry.getInstrumentation();
+        final SlowServiceTestingModule slowServiceTestingModule = new SlowServiceTestingModule(mockWebServer.getUrl(""));
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final TestComponent testComponent = DaggerConcurrencyTest_TestComponent.builder().slowServiceTestingModule(slowServiceTestingModule).build();
         ((RxJavaExampleApplication) instrumentation.getTargetContext().getApplicationContext()).setComponent(testComponent);
 
@@ -67,7 +67,7 @@ public class ConcurrencyTest {
         testObject.serviceCallStart();
 
         int sumOfAll = oneSleep + twoSleep + threeSleep + fourSleep + 500;
-        Log.e("Total Sleep: ", sumOfAll + " sec");
+        Log.e("Total Sleep: ", sumOfAll + "ms");
         Thread.sleep(sumOfAll);
 
         assertTrue(testObject.sortedStringList.get(0), testObject.sortedStringList.contains("a"));
