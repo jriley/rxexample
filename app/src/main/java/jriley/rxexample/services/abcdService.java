@@ -5,7 +5,7 @@ import retrofit.client.Response;
 import retrofit.http.GET;
 import rx.Observable;
 
-public interface ABCService {
+public interface abcdService {
 
     @GET("/service/one")
     Observable<Response> getOne();

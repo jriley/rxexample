@@ -7,24 +7,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-import jriley.rxexample.services.ABCService;
+import jriley.rxexample.services.abcdService;
 import retrofit.client.Response;
 import rx.Observable;
 import rx.Scheduler;
-import rx.functions.Action1;
-import rx.functions.Func4;
 
 public class ConcurrencyCaller {
 
-    private final ABCService abcService;
+    private final abcdService abcdService;
     private final Scheduler subscribeOn;
     private final Scheduler observeOn;
 
     List<String> sortedStringList = new ArrayList<>();
 
-    ConcurrencyCaller(ABCService abcService, Scheduler subscribeOn, Scheduler observeOn) {
+    ConcurrencyCaller(abcdService abcdService, Scheduler subscribeOn, Scheduler observeOn) {
 
-        this.abcService = abcService;
+        this.abcdService = abcdService;
         this.subscribeOn = subscribeOn;
         this.observeOn = observeOn;
     }
@@ -33,66 +31,50 @@ public class ConcurrencyCaller {
 
         Log.e("ServiceCallStart", "......");
 
-        final Observable<Response> one = abcService.getOne();
+        final Observable<Response> one = abcdService.getOne();
         one.subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .doOnNext(new Action1<Response>() {
-                    @Override
-                    public void call(final Response response) {
-                        System.out.println(response.getBody());
-                        Log.e("One", response.getBody().toString());
-                    }
+                .doOnNext(response -> {
+                    System.out.println(response.getBody());
+                    Log.e("One", response.getBody().toString());
                 });
 
-        final Observable<Response> two = abcService.getTwo();
+        final Observable<Response> two = abcdService.getTwo();
         two.subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .doOnNext(new Action1<Response>() {
-                    @Override
-                    public void call(final Response response) {
-                        System.out.println(response.getBody());
-                        Log.e("Two", response.getBody().toString());
-                    }
+                .doOnNext(response -> {
+                    System.out.println(response.getBody());
+                    Log.e("Two", response.getBody().toString());
                 });
 
-        final Observable<Response> three = abcService.getThree();
+        final Observable<Response> three = abcdService.getThree();
         three.subscribeOn(subscribeOn)
                 .observeOn(observeOn)
                 .first()
-                .doOnNext(new Action1<Response>() {
-                    @Override
-                    public void call(final Response response) {
-                        System.out.println(response.getBody());
-                        Log.e("Three", response.getBody().toString());
-                    }
+                .doOnNext(response -> {
+                    System.out.println(response.getBody());
+                    Log.e("Three", response.getBody().toString());
                 });
 
-        final Observable<Response> four = abcService.getFour();
+        final Observable<Response> four = abcdService.getFour();
         four.subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .doOnNext(new Action1<Response>() {
-                    @Override
-                    public void call(final Response response) {
-                        System.out.println(response.getBody());
-                        Log.e("Four", response.getBody().toString());
-                    }
+                .doOnNext(response -> {
+                    System.out.println(response.getBody());
+                    Log.e("Four", response.getBody().toString());
                 });
 
-        Observable.combineLatest(one, two, three, four, new Func4<Response, Response, Response, Response, Object>() {
-            @Override
-            public Object call(final Response response, final Response response2, final Response response3, final Response response4) {
+        Observable.combineLatest(one, two, three, four, (response, response2, response3, response4) -> {
 
-                if (!sortedStringList.contains(response.getBody().toString())) {
-                    sortedStringList.add(response.getBody().toString());
-                }
-
-                return null;
+            if (!sortedStringList.contains(response.getBody().toString())) {
+                sortedStringList.add(response.getBody().toString());
             }
-        }).subscribe(o -> {
-            Log.e("End", "Blah");
-        }, throwable -> {
-            Log.e("Err", "oops");
-        } );
+
+            return null;
+        }).retry(1)
+                .subscribe(o -> Log.e("onNext", sortedStringList.toString()),
+                        throwable -> Log.e("onNext<Throwable>", "oops"),
+                        () -> Log.e("onComplete call", sortedStringList.toString()));
 
     }
 }

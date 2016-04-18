@@ -4,7 +4,7 @@ import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
-import jriley.rxexample.services.ABCService;
+import jriley.rxexample.services.abcdService;
 import retrofit.RestAdapter;
 
 @Module
@@ -18,7 +18,7 @@ public class ServiceModule {
     }
 
     @Provides
-    ABCService providesSBCService(RestAdapter restAdapter){
-        return restAdapter.create(ABCService.class);
+    abcdService providesSBCService(RestAdapter restAdapter){
+        return restAdapter.create(abcdService.class);
     }
 }

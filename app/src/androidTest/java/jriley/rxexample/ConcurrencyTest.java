@@ -3,7 +3,6 @@ package jriley.rxexample;
 
 import android.app.Instrumentation;
 import android.support.test.InstrumentationRegistry;
-import android.support.test.espresso.base.MainThread;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
@@ -16,138 +15,109 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import dagger.Component;
-import jriley.rxexample.modules.TestingServiceModule;
-import jriley.rxexample.services.ABCService;
-import retrofit.android.MainThreadExecutor;
+import jriley.rxexample.modules.SlowServiceTestingModule;
+import jriley.rxexample.services.abcdService;
 import rx.Scheduler;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(AndroidJUnit4.class)
 public class ConcurrencyTest {
 
-    MockWebServer mockWebServer;
-
-    private final String serviceOne = "aeimqu";
-    private final String serviceTwo = "bfjnrv";
-    private final String serviceThree = "cgkosw";
-    private final String serviceFour = "dhlptxyz";
-    private ConcurrencyCaller testObject;
-
     @Inject
-    ABCService abcService;
+    abcdService abcdService;
+
+    private int oneSleep;
+    private int twoSleep;
+    private int threeSleep;
+    private int fourSleep;
+
+    private ConcurrencyCaller testObject;
 
     @Before
     public void setUp() throws Exception {
 
-        mockWebServer = new MockWebServer();
+        MockWebServer mockWebServer = new MockWebServer();
         mockWebServer.setDispatcher(new MyDispatcher());
         mockWebServer.start();
 
-        final TestingServiceModule testingServiceModule =
-                new TestingServiceModule(mockWebServer.getUrl(""));
-        final Instrumentation instrumentation =
-                InstrumentationRegistry.getInstrumentation();
-        final TestComponent testComponent = DaggerConcurrencyTest_TestComponent.builder()
-                .testingServiceModule(testingServiceModule).build();
-        final RxJavaExampleApplication exampleApplication =
-                (RxJavaExampleApplication) instrumentation.getTargetContext().getApplicationContext();
-        exampleApplication.setComponent(testComponent);
+        initServiceWaitTimes();
+
+        final SlowServiceTestingModule slowServiceTestingModule =  new SlowServiceTestingModule(mockWebServer.getUrl(""));
+        final Instrumentation instrumentation =  InstrumentationRegistry.getInstrumentation();
+        final TestComponent testComponent = DaggerConcurrencyTest_TestComponent.builder().slowServiceTestingModule(slowServiceTestingModule).build();
+        ((RxJavaExampleApplication) instrumentation.getTargetContext().getApplicationContext()).setComponent(testComponent);
 
         testComponent.inject(this);
-//        final Scheduler testScheduler = Schedulers.from(new MainThreadExecutor());
+
+
         final Scheduler testScheduler = Schedulers.from(Runnable::run);
-
-        testObject = new ConcurrencyCaller(abcService, testScheduler, testScheduler);
-
+        testObject = new ConcurrencyCaller(abcdService, testScheduler, testScheduler);
     }
 
     @Test
     public void testOne() throws Exception {
         testObject.serviceCallStart();
 
-        List<char[]> collection = Arrays.asList(serviceOne.toCharArray());
+        int sumOfAll = oneSleep + twoSleep + threeSleep + fourSleep + 500;
+        Log.e("Total Sleep: ", sumOfAll + " sec");
+        Thread.sleep(sumOfAll);
 
-//        testObject.sortedStringList.containsAll(Arrays.asList(serviceTwo.toCharArray()));
-//        testObject.sortedStringList.containsAll(Arrays.asList(serviceThree.toCharArray()));
-//        testObject.sortedStringList.containsAll(Arrays.asList(serviceFour.toCharArray()));
-
-//        System.out.print(testObject.sortedStringList.toString());
-        for (String s :testObject.sortedStringList ) {
-
-            Log.e("Damn",s);
-        }
-        assertTrue(testObject.sortedStringList.get(0), testObject.sortedStringList.containsAll(collection));
+        assertTrue(testObject.sortedStringList.get(0), testObject.sortedStringList.contains("a"));
     }
 
-    @Test
-    public void testTwo() throws Exception {
-        testObject.serviceCallStart();
+    private void initServiceWaitTimes() {
+        Random networkDelay = new Random();
+        oneSleep = getWaitTimeInSeconds(networkDelay);
+        twoSleep = getWaitTimeInSeconds(networkDelay);
+        threeSleep = getWaitTimeInSeconds(networkDelay);
+        fourSleep = getWaitTimeInSeconds(networkDelay);
+    }
 
-        fail();
+    private int getWaitTimeInSeconds(Random networkDelay) {
+        return networkDelay.nextInt(8) * 1000;
     }
 
     private class MyDispatcher extends Dispatcher {
-        int counterOne, counterTwo, counterThree, counterFour = 0;
-        Random networkDelay = new Random();
 
         @Override
         public MockResponse dispatch(final RecordedRequest recordedRequest) throws InterruptedException {
 
-            Thread.sleep(networkDelay.nextInt(3) * 100);
-
             if (recordedRequest.getPath().contains("/service/one")) {
-
-                final MockResponse mockResponse = getMockResponse(counterOne, serviceOne);
-                counterOne++;
-                return mockResponse;
+                Thread.sleep(oneSleep);
+                return getMockResponse("a");
 
             } else if (recordedRequest.getPath().contains("/service/two")) {
-
-                final MockResponse mockResponse = getMockResponse(counterTwo, serviceTwo);
-                counterTwo++;
-                return mockResponse;
+                Thread.sleep(twoSleep);
+                return getMockResponse("b");
 
             } else if (recordedRequest.getPath().contains("/service/three")) {
-
-                final MockResponse mockResponse = getMockResponse(counterThree, serviceThree);
-                counterThree++;
-                return mockResponse;
+                Thread.sleep(threeSleep);
+                return getMockResponse("c");
 
             } else if (recordedRequest.getPath().contains("/service/four")) {
-
-                final MockResponse mockResponse = getMockResponse(counterFour, serviceFour);
-                counterFour++;
-                return mockResponse;
+                Thread.sleep(fourSleep);
+                return getMockResponse("d");
 
             } else {
                 return null;
             }
         }
 
-        private MockResponse getMockResponse(int counter, final String serviceResource) {
-            if (counter > serviceResource.length()) {
-                counter = 0;
-            }
-
+        private MockResponse getMockResponse(final String serviceResource) throws InterruptedException {
             return new MockResponse().setResponseCode(200).setBody(serviceResource);
         }
-
     }
 
     @Singleton
-    @Component(modules = TestingServiceModule.class)
+    @Component(modules = SlowServiceTestingModule.class)
     public interface TestComponent extends MainComponent {
 
         void inject(ConcurrencyTest concurrencyCaller);
