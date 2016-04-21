@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+import jriley.rxexample.services.AbcdResponse;
+import jriley.rxexample.services.Tuple;
 import jriley.rxexample.services.abcdService;
-import retrofit.client.Response;
 import rx.Observable;
 import rx.Scheduler;
 
@@ -31,44 +32,30 @@ public class ConcurrencyCaller {
 
         Log.e("ServiceCallStart", "......");
 
-        final Observable<Response> one = abcdService.getOne();
-        one.subscribeOn(subscribeOn)
-                .observeOn(observeOn)
-                .doOnNext(response -> {
-                    System.out.println(response.getBody());
-                    Log.e("One", response.getBody().toString());
-                });
+        final Observable<AbcdResponse> one = abcdService.getOne()
+                .subscribeOn(subscribeOn)
+                .observeOn(observeOn);
 
-        final Observable<Response> two = abcdService.getTwo();
-        two.subscribeOn(subscribeOn)
+        final Observable<AbcdResponse> two = abcdService.getTwo()
+                .subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .doOnNext(response -> {
-                    System.out.println(response.getBody());
-                    Log.e("Two", response.getBody().toString());
-                });
+                .doOnNext(abcdResponse -> Log.e("Two b", abcdResponse.getType()));
 
-        final Observable<Response> three = abcdService.getThree();
-        three.subscribeOn(subscribeOn)
+        final Observable<AbcdResponse> three = abcdService.getThree()
+                .subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .first()
-                .doOnNext(response -> {
-                    System.out.println(response.getBody());
-                    Log.e("Three", response.getBody().toString());
-                });
+                .map(abcdResponse -> new AbcdResponse(abcdResponse.getType().toUpperCase()));
 
-        final Observable<Response> four = abcdService.getFour();
-        four.subscribeOn(subscribeOn)
+        final Observable<Tuple> four = abcdService.getFour().subscribeOn(subscribeOn)
                 .observeOn(observeOn)
-                .doOnNext(response -> {
-                    System.out.println(response.getBody());
-                    Log.e("Four", response.getBody().toString());
-                });
+                .map(abcdResponse -> new Tuple(abcdResponse.getType()));
 
         Observable.combineLatest(one, two, three, four, (response, response2, response3, response4) -> {
 
-            if (!sortedStringList.contains(response.getBody().toString())) {
-                sortedStringList.add(response.getBody().toString());
-            }
+            sortedStringList.add(response.getType());
+            sortedStringList.add(response2.getType());
+            sortedStringList.add(response3.getType());
+            sortedStringList.add(response4.getValue() + response2.getType());
 
             return null;
         }).retry(1)

@@ -31,7 +31,7 @@ public class SlowServiceTestingModule {
 
     @Provides
     @Singleton
-    abcdService getAService(RestAdapter restAdapter) {
+    abcdService getAbcdService(RestAdapter restAdapter) {
         return restAdapter.create(abcdService.class);
     }
 

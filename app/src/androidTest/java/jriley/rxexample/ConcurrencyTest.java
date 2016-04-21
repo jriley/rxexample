@@ -6,11 +6,13 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.squareup.okhttp.mockwebserver.Dispatcher;
 import com.squareup.okhttp.mockwebserver.MockResponse;
 import com.squareup.okhttp.mockwebserver.MockWebServer;
 import com.squareup.okhttp.mockwebserver.RecordedRequest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,6 +24,7 @@ import javax.inject.Singleton;
 
 import dagger.Component;
 import jriley.rxexample.modules.SlowServiceTestingModule;
+import jriley.rxexample.services.AbcdResponse;
 import jriley.rxexample.services.abcdService;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -40,11 +43,12 @@ public class ConcurrencyTest {
     private int fourSleep;
 
     private ConcurrencyCaller testObject;
+    private MockWebServer mockWebServer;
 
     @Before
     public void setUp() throws Exception {
 
-        MockWebServer mockWebServer = new MockWebServer();
+        mockWebServer = new MockWebServer();
         mockWebServer.setDispatcher(new MyDispatcher());
         mockWebServer.start();
 
@@ -62,6 +66,11 @@ public class ConcurrencyTest {
         testObject = new ConcurrencyCaller(abcdService, testScheduler, testScheduler);
     }
 
+    @After
+    public void tearDown() throws Exception {
+        mockWebServer.shutdown();
+    }
+
     @Test
     public void testOne() throws Exception {
         testObject.serviceCallStart();
@@ -70,7 +79,10 @@ public class ConcurrencyTest {
         Log.e("Total Sleep: ", sumOfAll + "ms");
         Thread.sleep(sumOfAll);
 
-        assertTrue(testObject.sortedStringList.get(0), testObject.sortedStringList.contains("a"));
+        assertTrue(testObject.sortedStringList.contains("a"));
+        assertTrue(testObject.sortedStringList.contains("b"));
+        assertTrue(testObject.sortedStringList.contains("C"));
+        assertTrue(testObject.sortedStringList.contains("db"));
     }
 
     private void initServiceWaitTimes() {
@@ -112,7 +124,8 @@ public class ConcurrencyTest {
         }
 
         private MockResponse getMockResponse(final String serviceResource) throws InterruptedException {
-            return new MockResponse().setResponseCode(200).setBody(serviceResource);
+            String s = new Gson().toJson(new AbcdResponse(serviceResource));
+            return new MockResponse().setResponseCode(200).setBody(s);
         }
     }
 

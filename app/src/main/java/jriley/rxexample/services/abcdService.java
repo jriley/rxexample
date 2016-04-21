@@ -1,21 +1,20 @@
 package jriley.rxexample.services;
 
 
-import retrofit.client.Response;
 import retrofit.http.GET;
 import rx.Observable;
 
 public interface abcdService {
 
     @GET("/service/one")
-    Observable<Response> getOne();
+    Observable<AbcdResponse> getOne();
 
     @GET("/service/two")
-    Observable<Response> getTwo();
+    Observable<AbcdResponse> getTwo();
 
     @GET("/service/three")
-    Observable<Response> getThree();
+    Observable<AbcdResponse> getThree();
 
     @GET("/service/four")
-    Observable<Response> getFour();
+    Observable<AbcdResponse> getFour();
 }
